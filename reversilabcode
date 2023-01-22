@@ -1,1 +1,332 @@
+//
+// Author:
+//
 
+// #include "reversi.h"
+#include <stdbool.h>
+#include <stdio.h>
+
+void printBoard(char board[][26], int n) {
+  printf("  ");
+
+  for (int k = 0; k < n; k++) {
+    char colHead = 'a';
+    printf("%c", colHead + k);
+  }
+  printf("\n");
+
+  for (int i = 0; i < n; i++) {
+    char rowHead = 'a';
+    printf("%c ", rowHead + i);
+    for (int j = 0; j < n; j++) {
+      printf("%c", board[i][j]);
+    }
+    printf("\n");
+  }
+}
+
+bool positionInBounds(int n, int row, int col) {
+  if (row >= 0 && row < n && col >= 0 && col < n) {
+    return true;
+  } else
+    return false;
+}
+
+bool checkLegalInDirection(char board[][26], int n, int row, int col,
+                           char colour, int deltaRow, int deltaCol) {
+  char oppcolour = 'W';
+  if (colour == 'W')
+    oppcolour = 'B';
+
+  if (positionInBounds(n, row, col) &&
+      board[row + deltaRow][col + deltaCol] == oppcolour) {
+    int i = 2;
+    while (positionInBounds(n, row + i * deltaRow, col + i * deltaCol)) {
+      if (board[row + i * deltaRow][col + i * deltaCol] == colour) {
+        return true;
+      }
+      if (board[row + i * deltaRow][col + i * deltaCol] == oppcolour) {
+        i++;
+      } else if (board[row + i * deltaRow][col + i * deltaCol] == 'U') {
+        return false;
+      }
+    }
+  }
+  return false;
+}
+
+bool avaliablemoves(char board[][26], char avaliableboard[26][26], int n,
+                    char color) {
+
+  const int deltarow[] = {-1, -1, -1, 0, 1, 1, 1, 0};
+  const int deltacol[] = {-1, 0, 1, 1, 1, 0, -1, -1};
+  bool temp = false;
+
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      avaliableboard[i][j] = false;
+    }
+  }
+
+  for (int row = 0; row < n; row++) {
+    for (int col = 0; col < n; col++) {
+      if (board[row][col] == 'U') {
+        for (int i = 0; i < 8; i++) {
+          if (checkLegalInDirection(board, n, row, col, color, deltarow[i],
+                                    deltacol[i])) {
+            avaliableboard[row][col] = true;
+            temp = true;
+          }
+        }
+      }
+    }
+  }
+  return temp;
+}
+
+void turntiles(char board[][26], int n, char colour, int row, int col) {
+  int temprow = 0;
+  int tempcol = 0;
+  bool valid = false;
+  char oppcolour = 'W';
+  if (colour == 'W')
+    oppcolour = 'B';
+  if (board[row][col] == 'U') {
+    for (int i = -1; i < 2; i++) {
+      for (int j = -1; j < 2; j++) {
+        if (((i != 0) || (j != 0)) &&
+            checkLegalInDirection(board, n, row, col, colour, i, j)) {
+          valid = true;
+          temprow = row + i;
+          tempcol = col + j;
+
+          while (positionInBounds(n, row, col) &&
+                 (board[temprow][tempcol] == oppcolour)) {
+            board[temprow][tempcol] = colour;
+            temprow += i;
+            tempcol += j;
+          }
+        }
+      }
+    }
+    if (valid)
+      board[row][col] = colour;
+  }
+  return 0;
+}
+
+int counttiles(char board[][26], int n, char colour, int row, int col,
+               int deltax, int deltay) {
+  int temprow = 0;
+  int tempcol = 0;
+  int sum = 0;
+  char oppcolour = 'W';
+  if (colour == 'W')
+    oppcolour = 'B';
+
+  temprow = row + deltax;
+  tempcol = col + deltay;
+
+  while (positionInBounds(n, row, col) &&
+         (board[temprow][tempcol] == oppcolour)) {
+    sum++;
+    temprow += deltax;
+    tempcol += deltay;
+  }
+  return sum;
+}
+
+int scorecalc(char board[][26], int row, int col, char color, int n) {
+  const int deltarow[] = {-1, -1, -1, 0, 0, 1, 1, 1};
+  const int deltacol[] = {-1, 0, 1, -1, 1, -1, 0, 1};
+
+  int sum = 0;
+  for (int i = 0; i < 8; i++) {
+    if (checkLegalInDirection(board, n, row, col, color, deltarow[i],
+                              deltacol[i]))
+      sum =
+          sum + counttiles(board, n, color, row, col, deltarow[i], deltacol[i]);
+  }
+  return sum;
+}
+
+int countsavaliablemoves(char board[][26], int n, char color) {
+
+  const int deltarow[] = {-1, -1, -1, 0, 1, 1, 1, 0};
+  const int deltacol[] = {-1, 0, 1, 1, 1, 0, -1, -1};
+  int temp = 0;
+
+  for (int row = 0; row < n; row++) {
+    for (int col = 0; col < n; col++) {
+      if (board[row][col] == 'U') {
+        for (int i = 0; i < 8; i++) {
+          if (checkLegalInDirection(board, n, row, col, color, deltarow[i],
+                                    deltacol[i])) {
+            temp++;
+          }
+        }
+      }
+    }
+  }
+  return temp;
+}
+
+int opponentmovesavaliable(char board[][26], int n, int row, int col,
+                           char color) {
+  char temp[26][26];
+  char opponentcolor = 'B';
+  int number = 0;
+
+  for (int row = 0; row < n; row++) {
+    for (int col = 0; col < n; col++) {
+      temp[row][col] = board[row][col];
+    }
+  }
+  turntiles(temp, n, color, row, col);
+  if (color == 'B')
+    opponentcolor = 'W';
+  number = countsavaliablemoves(temp, n, opponentcolor);
+
+  return number;
+}
+
+int cornerpeice(int row, int col, int n) {
+  if ((row == 0 && (col == 0 || col == n - 1)) ||
+      (row == n - 1 && (col == 0 || col == n - 1)))
+    return 1;
+  else
+    return 0;
+}
+
+int edgepeice(int row, int col, int n) {
+  if (row == 0 || row == n - 1 || col == 0 || col == n - 1)
+    return 1;
+  else
+    return 0;
+}
+
+int colorcounter(char board[][26], int n, char color) {
+  int counter = 0;
+  for (int row = 0; row < n; row++) {
+    for (int col = 0; col < n; col++) {
+      if (board[row][col] == color) {
+        counter++;
+      }
+    }
+  }
+  return counter;
+}
+
+void computermove(char board[][26], char avaliableboardcomputer[][26], int n,
+             char turn) {
+  int highscore = 0;
+  int score = 0;
+  char bestrow, bestcol;
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      if (avaliableboardcomputer[i][j] == true) {
+        score = scorecalc(board, i, j, turn, n) +
+                2 * opponentmovesavaliable(board, n, i, j, turn) +
+                150 * cornerpeice(i, j, n) + 10 * edgepeice(i, j, n);
+        if (highscore < score) {
+          highscore = score;
+          bestrow = i;
+          bestcol = j;
+        }
+      }
+    }
+  }
+      turntiles(board, n, turn, bestrow, bestcol);
+    printf("Computer places %c at %c%c.\n", turn, bestrow + 'a', bestcol + 'a');
+    printBoard(board, n);
+    return 0;
+}
+
+bool userMove(char board[][26], char avaliableboard[][26], int n, char color) {
+  char makingMove[2];
+  printf("Enter move for colour %c (RowCol): ", color);
+  scanf(" %s", makingMove);
+  int row = makingMove[0] - 'a';
+  int col = makingMove[1] - 'a';
+  if (positionInBounds(n, row, col) == false ||
+      avaliableboard[row][col] == false) {
+    printf("Invalid move.\n");
+    return false;
+  } else
+    turntiles(board, n, color, row, col);
+  printBoard(board, n);
+  return true;
+}
+
+int main(void) {
+  int size = 0;
+  char computer;
+  char user = 'B';
+  char turn = 'B';
+
+  printf("Enter the board dimension: ");
+  scanf("%d", &size);
+  printf("Computer plays (B/W): ");
+  scanf(" %c", &computer);
+
+  char board[26][26];
+  for (int i = 0; i < size; i++) {
+    for (int j = 0; j < size; j++) {
+      board[i][j] = 'U';
+    }
+  }
+
+  board[size / 2 - 1][size / 2 - 1] = 'W';
+  board[size / 2][size / 2 - 1] = 'B';
+  board[size / 2 - 1][size / 2] = 'B';
+  board[size / 2][size / 2] = 'W';
+
+  printBoard(board, size);
+
+  char avaliableboardcomputer[26][26];
+  char avaliableboarduser[26][26];
+
+  if (computer == 'B')
+    user = 'W';
+
+  while (avaliablemoves(board, avaliableboardcomputer, size, computer) ||
+         avaliablemoves(board, avaliableboarduser, size, user)) {
+    if (turn == computer) {
+      if (avaliablemoves(board, avaliableboardcomputer, size, computer)) {
+        computermove(board, avaliableboardcomputer, size, computer);
+      } else {
+        printf("%c player has no valid move.\n", computer);
+      }
+      turn = user;
+    } else if (turn == user) {
+      if (avaliablemoves(board, avaliableboarduser, size, user)) {
+        if (userMove(board, avaliableboarduser, size, user) == false) {
+          printf("%c player wins.\n", computer);
+          return 0;
+        }
+      } else {
+        printf("%c player has no valid move.\n", user);
+      }
+      turn = computer;
+    }
+  }
+
+  int whitecounter = 0, blackcounter = 0;
+
+  for (int row = 0; row < size; row++) {
+    for (int col = 0; col < size; col++) {
+      if (board[row][col] == 'W')
+        whitecounter++;
+      if (board[row][col] == 'B')
+        blackcounter++;
+    }
+  }
+  if (whitecounter > blackcounter)
+    printf("W player wins.");
+  else if (blackcounter > whitecounter)
+    printf("B player wins.");
+  else
+    printf("Draw!");
+
+  return 0;
+}
